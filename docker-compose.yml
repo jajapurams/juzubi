@@ -1,0 +1,19 @@
+# Self-host the Juzubi app. Supply the same env vars you set on Vercel.
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - BLOB_READ_WRITE_TOKEN=${BLOB_READ_WRITE_TOKEN}
+      - CONTENT_PASSWORD=${CONTENT_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      # AI photo generator
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - AI_IMAGE_PROVIDER=${AI_IMAGE_PROVIDER:-gemini}
+      # optional alternate provider
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN:-}
+    restart: unless-stopped
