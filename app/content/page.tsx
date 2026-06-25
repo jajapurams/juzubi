@@ -28,6 +28,9 @@ export default async function ContentCatalog() {
           <p className="mt-1 text-sm text-neutral-500">{products.length} products · changes go live immediately</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/content/inventory" className="rounded-full border border-brand bg-brand/5 px-5 py-2.5 text-sm font-semibold text-brand hover:bg-brand/10">
+            📊 Restock planner
+          </Link>
           <Link href="/content/media" className="rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-ink hover:bg-neutral-100">
             Media library
           </Link>
