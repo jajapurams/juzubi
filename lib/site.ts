@@ -1,7 +1,6 @@
-// Pre-launch switch: products aren't ready, so online purchasing (cart +
-// Stripe checkout) is OFF. The store stays browsable and WhatsApp ordering
-// works. Flip to `true` to turn on cart & checkout at launch.
-export const PURCHASING_ENABLED = false;
+// Online purchasing (cart + Stripe checkout). Set to `false` to temporarily
+// turn off cart & checkout (store stays browsable; WhatsApp ordering works).
+export const PURCHASING_ENABLED = true;
 
 export const SITE = {
   name: "JUZUBI",
