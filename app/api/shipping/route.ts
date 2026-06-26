@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { computeShippingCents, itemWeightOz } from "@/lib/shipping";
+import { PURCHASING_ENABLED } from "@/lib/site";
 
 // Recalculates shipping for a destination ZIP and updates the open PaymentIntent.
 export async function POST(req: Request) {
+  if (!PURCHASING_ENABLED) {
+    return NextResponse.json({ error: "Online checkout is not open yet." }, { status: 403 });
+  }
   let slugs: string[];
   let destZip: string;
   let paymentIntentId: string;

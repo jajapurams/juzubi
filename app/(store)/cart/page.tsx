@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
-import { usd } from "@/lib/site";
+import { usd, PURCHASING_ENABLED, SITE, waLink } from "@/lib/site";
 import SmartImage from "@/components/SmartImage";
 
 export default function CartPage() {
@@ -56,12 +56,28 @@ export default function CartPage() {
               <span>Shipping</span>
               <span>Calculated at checkout</span>
             </div>
-            <Link
-              href="/checkout"
-              className="mt-5 block rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white hover:bg-brand-dark"
-            >
-              Proceed to checkout
-            </Link>
+            {PURCHASING_ENABLED ? (
+              <Link
+                href="/checkout"
+                className="mt-5 block rounded-full bg-brand px-6 py-3 text-center text-sm font-semibold text-white hover:bg-brand-dark"
+              >
+                Proceed to checkout
+              </Link>
+            ) : (
+              <>
+                <p className="mt-5 rounded-md bg-neutral-100 px-4 py-3 text-center text-sm text-neutral-600">
+                  Online checkout is opening soon.
+                </p>
+                <a
+                  href={waLink(`Hi ${SITE.name}! I'd like to order some items.`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 block rounded-full bg-[#25D366] px-6 py-3 text-center text-sm font-semibold text-white hover:opacity-90"
+                >
+                  Order on WhatsApp
+                </a>
+              </>
+            )}
             <Link href="/" className="mt-3 block text-center text-sm font-medium text-brand hover:underline">
               Continue shopping
             </Link>

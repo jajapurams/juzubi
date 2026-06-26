@@ -5,7 +5,7 @@ import Link from "next/link";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, AddressElement, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useCart } from "@/lib/cart";
-import { usd } from "@/lib/site";
+import { usd, PURCHASING_ENABLED, SITE, waLink } from "@/lib/site";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "");
 
@@ -19,6 +19,34 @@ type Totals = {
 };
 
 export default function CheckoutPage() {
+  // Pre-launch: online checkout is disabled.
+  if (!PURCHASING_ENABLED) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <h1 className="font-display text-3xl font-extrabold text-ink">Checkout opening soon</h1>
+        <p className="mt-3 text-neutral-600">
+          Online ordering isn’t open just yet. Message us on WhatsApp and we’ll help you order.
+        </p>
+        <a
+          href={waLink(`Hi ${SITE.name}! I'd like to order some items.`)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 inline-block rounded-full bg-[#25D366] px-7 py-3 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Order on WhatsApp
+        </a>
+        <div>
+          <Link href="/" className="mt-4 inline-block text-sm font-medium text-brand hover:underline">
+            Continue shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <CheckoutInner />;
+}
+
+function CheckoutInner() {
   const { items } = useCart();
   const [data, setData] = useState<Totals | null>(null);
   const [err, setErr] = useState("");
