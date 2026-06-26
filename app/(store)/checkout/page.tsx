@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, AddressElement, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -9,21 +9,33 @@ import { usd } from "@/lib/site";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "");
 
-type Totals = { clientSecret: string; subtotal: number; shipping: number; amount: number };
+type Totals = {
+  clientSecret: string;
+  paymentIntentId: string;
+  subtotal: number;
+  shipping: number;
+  shippingMethod: string;
+  amount: number;
+};
 
 export default function CheckoutPage() {
   const { items } = useCart();
   const [data, setData] = useState<Totals | null>(null);
   const [err, setErr] = useState("");
+  const [calcZip, setCalcZip] = useState(false);
+  const lastZip = useRef<string>("");
+
+  const slugs = items.map((i) => i.slug);
 
   useEffect(() => {
     if (items.length === 0) return;
     setErr("");
     setData(null);
+    lastZip.current = "";
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slugs: items.map((i) => i.slug) }),
+      body: JSON.stringify({ slugs }),
     })
       .then(async (r) => {
         const d = await r.json();
@@ -32,7 +44,31 @@ export default function CheckoutPage() {
       })
       .then(setData)
       .catch((e) => setErr(e.message));
-  }, [items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
+
+  // Recalculate shipping when the customer enters a destination ZIP.
+  const onZip = useCallback(
+    (zip: string) => {
+      if (!data || zip.length < 5 || zip === lastZip.current) return;
+      lastZip.current = zip;
+      setCalcZip(true);
+      fetch("/api/shipping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slugs, destZip: zip, paymentIntentId: data.paymentIntentId }),
+      })
+        .then(async (r) => {
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "Could not update shipping.");
+          return d as Omit<Totals, "clientSecret" | "paymentIntentId">;
+        })
+        .then((d) => setData((prev) => (prev ? { ...prev, ...d } : prev)))
+        .catch(() => {})
+        .finally(() => setCalcZip(false));
+    },
+    [data, slugs]
+  );
 
   if (items.length === 0) {
     return (
@@ -59,7 +95,7 @@ export default function CheckoutPage() {
               stripe={stripePromise}
               options={{ clientSecret: data.clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: "#b8002e" } } }}
             >
-              <CheckoutForm />
+              <CheckoutForm onZip={onZip} />
             </Elements>
           )}
         </div>
@@ -73,9 +109,12 @@ export default function CheckoutPage() {
                 <span className="font-semibold text-ink">{usd(data.subtotal / 100)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
+                <span>
+                  Shipping
+                  {data.shippingMethod && <span className="block text-xs text-neutral-400">{data.shippingMethod}</span>}
+                </span>
                 <span className={data.shipping === 0 ? "font-semibold text-green-700" : ""}>
-                  {data.shipping === 0 ? "FREE" : usd(data.shipping / 100)}
+                  {calcZip ? "…" : data.shipping === 0 ? "FREE" : usd(data.shipping / 100)}
                 </span>
               </div>
               <div className="mt-2 flex justify-between border-t border-neutral-200 pt-2 text-base font-bold text-ink">
@@ -86,14 +125,16 @@ export default function CheckoutPage() {
           ) : (
             <p className="mt-3 text-sm text-neutral-500">Calculating…</p>
           )}
-          <p className="mt-3 text-xs text-neutral-400">Flat-rate shipping for now — live USPS rates coming soon.</p>
+          <p className="mt-3 text-xs text-neutral-400">
+            Shipping is calculated by USPS from your delivery ZIP. Free over $75.
+          </p>
         </aside>
       </div>
     </div>
   );
 }
 
-function CheckoutForm() {
+function CheckoutForm({ onZip }: { onZip: (zip: string) => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -118,7 +159,14 @@ function CheckoutForm() {
     <form onSubmit={onSubmit} className="space-y-5">
       <div>
         <h3 className="mb-2 text-sm font-semibold text-ink">Shipping address</h3>
-        <AddressElement options={{ mode: "shipping" }} />
+        <AddressElement
+          options={{ mode: "shipping" }}
+          onChange={(e) => {
+            if (e.value.address.country === "US" && /^\d{5}/.test(e.value.address.postal_code)) {
+              onZip(e.value.address.postal_code.slice(0, 5));
+            }
+          }}
+        />
       </div>
       <div>
         <h3 className="mb-2 text-sm font-semibold text-ink">Payment</h3>

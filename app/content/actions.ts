@@ -40,6 +40,13 @@ function extraFields(fd: FormData) {
   };
 }
 
+// weight_oz lives in its own (possibly-not-yet-migrated) column — saved separately
+// so a missing column never blocks subcategories/sizes from saving.
+function weightVal(fd: FormData): number | null {
+  const v = String(fd.get("weight_oz") ?? "").trim();
+  return v === "" ? null : Number(v);
+}
+
 export async function createProduct(fd: FormData) {
   if (!(await isContent())) redirect("/content/login");
   const supabase = createAdminClient();
@@ -50,6 +57,7 @@ export async function createProduct(fd: FormData) {
     // these columns may not exist until their migration is run — ignore failures
     if (imgs.length) await supabase.from("products").update({ images: imgs }).eq("id", data.id);
     await supabase.from("products").update(extraFields(fd)).eq("id", data.id);
+    await supabase.from("products").update({ weight_oz: weightVal(fd) }).eq("id", data.id);
   }
   revalidatePath("/content");
   revalidatePath("/");
@@ -65,6 +73,7 @@ export async function updateProduct(fd: FormData) {
   // these columns may not exist until their migration is run — ignore failures
   await supabase.from("products").update({ images: galleryImages(fd) }).eq("id", id);
   await supabase.from("products").update(extraFields(fd)).eq("id", id);
+  await supabase.from("products").update({ weight_oz: weightVal(fd) }).eq("id", id);
   revalidatePath("/content");
   revalidatePath("/");
   redirect("/content");

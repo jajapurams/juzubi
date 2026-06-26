@@ -24,6 +24,7 @@ type ProductFormValues = {
   images?: string[];
   in_stock?: boolean;
   sort_order?: number;
+  weight_oz?: number | null;
 };
 
 const inputCls = "mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand";
@@ -76,6 +77,11 @@ export default function ProductForm({
         <label className="text-sm font-medium text-ink">
           Sort order
           <input name="sort_order" type="number" defaultValue={p.sort_order ?? 0} className={inputCls} />
+        </label>
+        <label className="text-sm font-medium text-ink">
+          Shipping weight (oz)
+          <span className="block text-[11px] font-normal text-neutral-400">for USPS rates; blank = category default</span>
+          <input name="weight_oz" type="number" min="0" step="0.1" defaultValue={p.weight_oz ?? ""} className={inputCls} />
         </label>
         <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-ink">
           <input name="in_stock" type="checkbox" defaultChecked={p.in_stock ?? true} className="h-4 w-4" />
